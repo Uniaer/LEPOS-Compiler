@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE ELITE PROMPT OS // COMPILER</title>
+    <style>
+        /* Tối ưu hóa biến CSS cho 2 chế độ */
+        :root {
+            /* DARK MODE (Mặc định) */
+            --bg: #0A0A0A;
+            --surface: #151515;
+            --surface-hover: #222222;
+            --primary: #F5C800; /* Vàng */
+            --text-main: #FFFFFF;
+            --text-dim: #888888;
+            --border: #333333;
+            --btn-text: #000000;
+        }
+
+        [data-theme="light"] {
+            /* LIGHT MODE */
+            --bg: #F3F4F6;
+            --surface: #FFFFFF;
+            --surface-hover: #F9FAFB;
+            --primary: #84CC16; /* Xanh lá mạ */
+            --text-main: #111827;
+            --text-dim: #6B7280;
+            --border: #E5E7EB;
+            --btn-text: #000000;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .header {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+
+        .theme-toggle {
+            background: var(--surface);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--primary);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .container { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s;
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-dim);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input[type="text"], select, textarea {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 12px;
+            font-size: 14px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+
+        input[type="text"]:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            background: var(--primary);
+            color: var(--btn-text);
+            border: none;
+            padding: 14px 24px;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 4px;
+            width: 100%;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        #copyBtn {
+            background: var(--surface-hover);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .dynamic-vars {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px dashed var(--border);
+            flex-grow: 1;
+        }
+
+        textarea#outputBox {
+            flex-grow: 1;
+            min-height: 400px;
+            line-height: 1.5;
+            font-family: monospace;
+            resize: none;
+        }
+
+        .id-badge {
+            display: inline-block;
+            background: var(--surface-hover);
+            color: var(--primary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Nút chuyển đổi giao diện -->
+<div class="header">
+    <button id="themeToggle" class="theme-toggle">️ Light Mode</button>
+</div>
+
+<div class="container">
+    <div class="panel">
+        <h2>// Input Parameters</h2>
+        <label>Search by ID (e.g., ES-C37)</label>
+        <input type="text" id="searchId" placeholder="Enter Prompt ID..." autocomplete="off">
+        <label>Category</label>
+        <select id="categorySelect">
+            <option value="">-- Select Category --</option>
+        </select>
+        <label>Select Prompt</label>
+        <select id="promptSelect" disabled>
+            <option value="">-- Select Prompt --</option>
+        </select>
+        <div id="dynamicVarsContainer" class="dynamic-vars" style="display: none;"></div>
+        <button class="btn" id="generateBtn" style="display: none; margin-top: 20px;">Execute Code</button>
+    </div>
+
+    <div class="panel">
+        <h2>// System Output</h2>
+        <div id="activeIdBadge" class="id-badge" style="display:none;"></div>
+        <textarea id="outputBox" placeholder="Your compiled prompt will appear here..." readonly></textarea>
+        <button class="btn" id="copyBtn" style="margin-top: 10px;">Copy to Clipboard</button>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // 1. DÁN BIẾN const db = {...} CỦA M VÀO ĐÂY
+    // ==========================================
+        const db = {
+        "C1": {
+            name: "Strategy & Research",
+            prompts: {
+                "1": { title: "Deeply-Rooted Pain Points Analyzer", text: `Act as an elite Market Research Analyst and Direct Response Copywriter.\nYour task is to analyze and identify the 5 most critical, deeply-rooted pain points of my target audience to fuel my marketing campaigns.\n\nContext variables:\n- Target Audience: [Target_Audience_Description]\n- Business Niche: [Your_Business_Niche]\n- Product/Service Type: [Your_Product_or_Service_Type]\n\nDetailed Constraints:\n1. Deep Psychology: Do not use generic, surface-level pain points (e.g., "lack of time" or "need more money"). You must dig into the emotional, financial, and psychological triggers.\n2. The "5 Whys" Framework: Apply this framework to uncover the absolute root causes of their frustrations. Address how these pain points affect their daily lives, self-esteem, or business operations.\n3. Concise Formatting: Keep the text inside the table cells punchy, digestible, and impactful. Avoid wall-of-text paragraphs to ensure the table renders beautifully on all screen sizes.\n\nOutput Format:\nPresent the results in a structured Markdown table with the following 5 columns:\n1. Core Pain Point: Name the specific problem with a catchy, descriptive title.\n2. Root Cause: The psychological or structural reason behind it (Summarized strictly in 1-2 impactful sentences).\n3. Emotional Impact: How this specific pain point makes them feel on a daily basis (Highlight the exact emotions).\n4. Solution Bridge: Exactly how [Your_Product_or_Service_Type] acts as the ultimate antidote.\n5. Marketing Hook: Write 1 punchy, high-converting headline or opening sentence for a Facebook Ad, Email, or Landing Page that directly triggers this specific pain point.` },
+                "2": { title: "Hyper-Detailed Buyer Persona", text: `Act as a Senior Consumer Insights Strategist.\nYour task is to construct a hyper-detailed, data-driven Buyer Persona for my business.\n\nContext variables:\n- Target Audience Demographic: [Age_Location_Gender_Income_Level]\n- Product Price Point: [Low_Ticket_or_High_Ticket_Pricing]\n- Main Problem Solved: [The_Primary_Problem_Your_Product_Solves]\n\nDetailed Constraints:\nGo far beyond basic demographics. I need deep psychographics. You must include their daily routines, media consumption habits (which platforms, influencers, or subreddits they follow), hidden desires, and specific objections they have before buying a [Low_Ticket_or_High_Ticket_Pricing] product.\nAvoid superficial or clichéd traits; make this persona feel like a real, living human being.\n\nOutput Format:\nGenerate a comprehensive report divided into the following sections using clear headings:\n- Demographic & Professional Profile\n- Psychographic Profile (Values, fears, beliefs)\n- "Day-in-the-Life" Narrative (A 2-paragraph story of their typical day encountering their main problem)\n- Information Diet (Where they hang out online)\n- Purchasing Drivers, Objections & Counter-Strategies (Why they buy, exactly what they say when they hesitate, AND the specific marketing/sales angles you must use to overcome each of those objections).` },
+                "3": { title: "Competitive Gap Analysis", text: `Act as a Competitive Intelligence Expert and a Direct-Response Marketer.\nYour task is to conduct a ruthless gap analysis to expose the weaknesses, blind spots, and unfulfilled promises of my direct competitors, and then turn those weaknesses into weaponized marketing assets.\n\nContext variables:\n- Competitor Name or Type: [Names_of_Competitors_or_Description_of_Competitor_Type]\n- Business Niche: [Your_Business_Niche]\n- Our Advantage: [Your_Unique_Strength_or_Approach]\n\nDetailed Constraints:\nFocus heavily on customer service failures, product limitations, outdated features, and marketing gaps.\nAssume the persona of a highly frustrated customer leaving a brutally honest 1-star review for [Competitor Name or Type] to extract the most common negative sentiment patterns.\nDo not sugarcoat their strengths; focus entirely on what they are doing wrong so I can directly capitalize on it using [Our_Advantage].\n\nOutput Format:\nProvide a structured, bulleted list categorized precisely into the following sections:\n- Product & Feature Gaps (What they lack functionally)\n- Marketing & Messaging Blind Spots (Who they are ignoring or alienating)\n- Customer Experience Failures (Write 3 specific, emotionally charged "1-Star Review" quotes that highlight their operational failures)\n- The Opportunity Action Plan (Provide 3 actionable steps I must take to steal their market share. For EACH step, you MUST include a "Weaponized Hook"—a punchy, aggressive headline or ad copy specifically designed to exploit the competitor's flaw and highlight [Our_Advantage]).` },
+                "4": { title: "30-Day Content Idea Matrix", text: `Act as a Master Content Strategist and Direct-Response Copywriter.\nYour task is to develop a highly engaging, conversion-focused 30-day content idea matrix.\n\nContext variables:\n- Core Topic/Niche: [Your_Main_Topic_or_Niche]\n- Target Audience: [Your_Target_Audience]\n- Primary Social Platform: [Platform_e.g_Instagram_Twitter_LinkedIn]\n\nDetailed Constraints:\nThe content must strictly follow the TOFU/MOFU/BOFU (Top of Funnel, Middle of Funnel, Bottom of Funnel) framework.\nEnsure a strategic mix of educational, entertaining, inspirational, and direct promotional content tailored specifically for the algorithm and user behavior of [Primary_Social_Platform].\nDo not repeat themes or use generic advice. Every piece of content must have a clear psychological purpose.\n\nOutput Format:\nGenerate a 30-row markdown table with the following 6 columns:\n1. Day (1 to 30)\n2. Funnel Stage (TOFU/MOFU/BOFU)\n3. Content Pillar (e.g., Myth-busting, Case Study, Tutorial)\n4. Hook / Headline (A scroll-stopping, psychology-driven opening sentence)\n5. Format & Core Message (Specify the best format for the platform e.g., Reel, Carousel, Text+Image AND summarize the core argument/body in 1-2 sentences)\n6. Call to Action (Specific CTA to drive engagement, lead generation, or sales)` },
+                "5": { title: "Long-Tail Keywords Generator", text: `Act as a Technical SEO Specialist and Search Intent Analyst.\nYour task is to generate highly targeted, low-competition long-tail keywords that have high potential to trend in my specific niche.\n\nContext variables:\n- Broad Niche Keyword: [Your_Broad_Niche_Keyword]\n- Customer Goal: [What_the_Customer_is_Trying_to_Achieve]\n\nDetailed Constraints:\nExclude broad, highly competitive terms (e.g., just "digital marketing" or "weight loss").\nFocus exclusively on high-intent commercial and informational queries of 4 words or more.\nYou must incorporate intent modifiers such as "how to [x] without [y]", "best [x] for [Customer Goal]", and comparison frameworks ("[x] vs [y]").\nThe keywords must reflect the actual conversational language users type into Google or YouTube.\n\nOutput Format:\nDeliver a categorized list grouping the long-tail keywords by Search Intent:\n- Informational Intent (Top of funnel learning)\n- Navigational/Comparison Intent (Middle of funnel research)\n- Transactional Intent (Ready to buy)\n\n*For EACH keyword, you MUST provide:*\n1. Keyword: The specific long-tail query.\n2. Intent Modifier Used: Briefly state the framework used.\n3. Clickable Title: A highly engaging suggested Blog/Video Title.\n4. Content Angle & Format: Specify the optimal content format (e.g., Step-by-Step Guide, Comparison Table, Listicle) AND provide 1-2 sentences explaining the core argument or specific value the content must deliver to satisfy this exact search intent.` },
+                "6": { title: "Unique Selling Proposition (USP)", text: `Act as a Top-Tier Brand Positioning Consultant and Direct-Response Copywriter.\nYour task is to craft a compelling, distinct, and highly persuasive Unique Selling Proposition (USP) for my product.\n\nContext variables:\n- Product Features: [List_of_Key_Features]\n- Competitor Flaws: [Known_Flaws_of_Competitors]\n- Ultimate Customer Benefit: [The_End_Result_or_Transformation]\n\nDetailed Constraints:\nThe USP must be concise, punchy, and memorable. It must be impossible for competitors to simply copy and paste onto their own websites.\nIt must pass the "So What?" test—every feature must be translated into a life-changing benefit.\nFocus on contrasting our strengths directly against [Competitor Flaws] to highlight the [Ultimate Customer Benefit].\n\nOutput Format:\nProvide 5 distinct USP variations based on the psychological angles below.\nYou MUST use strict Markdown formatting (bolding and bullet points) for readability.\nFor EACH of the 5 variations, structure the response exactly like this:\n### [Angle Name]\n* **Hero Headline:** [Write a punchy, scroll-stopping headline - MAXIMUM 7 words]\n* **Sub-Headline:** [Write 1-2 sentences explaining the specific mechanism or ultimate benefit]\n* **Psychology:** [1-2 sentences explaining why this specific angle triggers a buying emotion]\n* **Deployment:** [1 actionable sentence on exactly where/how to place this on a Landing Page or Ad]\n\nThe 5 Angles to generate:\n1. The Speed/Efficiency Angle\n2. The Quality/Craftsmanship Angle\n3. The Unique Mechanism Angle\n4. The Identity/Status Angle\n5. The Anti-Establishment (Rebel) Angle` },
+                "7": { title: "FAQ & Buying Objections Dismantler", text: `Act as a Conversion Rate Optimization (CRO) Expert and Elite Sales Closer.\nYour task is to predict and proactively dismantle the most critical frequently asked questions and buying objections.\n\nContext variables:\n- Product Name: [Your_Product_Name]\n- Price Tier: [Low_Cost_Mid_Tier_or_High_Ticket]\n- Target Audience Fear: [The_Biggest_Fear_or_Risk_They_Feel_Before_Buying]\n\nDetailed Constraints:\nDo not just provide basic logistical questions (like "how do I log in?").\nYou must address the unspoken psychological fears, trust issues, price justification for a [Price Tier] product, and technical anxieties related to [Target Audience Fear].\nFrame the answers using persuasive copywriting frameworks to dissolve friction, build immediate trust, and make the customer feel understood.\n\nOutput Format:\nFormat the output as a structured Q&A script containing exactly 7 crucial questions.\nFor EACH question, provide the following 4 elements:\n- The Customer's Question: (Phrase it exactly how they would ask it)\n- Hidden Context: (The "Real Fear" they aren't saying out loud)\n- The Persuasive Answer: (A perfectly crafted, reassuring response that leads to a sale)\n- CRO Deployment Strategy: (Specifically state the best marketing asset to place this exact Q&A to maximize conversions - e.g., Checkout Page Accordion, Abandoned Cart Email, Sales Call Script, or Retargeting Ad).` },
+                "8": { title: "Customer Feedback Survey & Playbook", text: `Act as a UX Researcher and Customer Success Manager. Your task is to design a high-converting, psychologically safe customer feedback survey and interview playbook.\n\nContext variables:\n- Goal of Survey: [e.g., Gathering_Testimonials, Product_Improvement, Finding_New_Niches]\n- Customer Segment: [e.g., Repeat_Buyers, Refunded_Customers, First_Time_Buyers]\n\nDetailed Constraints:\nThe questions must be strictly open-ended to elicit detailed stories and emotional responses.\nStructure the flow logically: start with easy warm-ups, move into the deep-dive transformation (the "Before and After"), and end with an open floor.\nAvoid leading questions. The tone should be highly empathetic and appreciative, tailored to the specific niche's culture.\n\nOutput Format:\nProvide a step-by-step interview playbook containing:\n- The Email/Message Hook (How to ask them to participate without being ignored)\n- The Intro Script (Setting the stage on the call/form)\n- 3 Warm-up Questions (Building rapport)\n- 5 Deep-Dive Questions (Extracting the core value based on the [Goal of Survey])\n- The Closing Statement (Thanking them and asking for a referral/testimonial permission)\n- BONUS: The Insight Synthesis Template (Provide a 3-column table for the user to fill out after the interview to categorize: 1. Golden Quotes for Ads, 2. Emotional Triggers for Content, 3. Unmet Needs for Product R&D).` },
+                "9": { title: "Strategic Trend Report", text: `Act as a Trend Forecaster and Niche Market Analyst. Your task is to analyze the latest emerging trends, shifts in consumer behavior, and upcoming technological impacts in my specific market.\n\nContext variables:\n- Business Niche: [Your_Business_Niche]\n- Target Market Region: [Global_or_Specific_Country_Region]\n\nDetailed Constraints:\nFocus on both macro-trends (industry-wide shifts) and micro-trends (social media aesthetics, new slang, emerging subcultures) relevant for the next 6 to 12 months.\nDo not state obvious or outdated historical facts. The analysis must be forward-looking.\nCrucially, you must provide direct, actionable ways for an independent creator/entrepreneur to monetize these shifts immediately.\nFocus on "Low-Hanging Fruit" opportunities that require minimal upfront investment.\n\nOutput Format:\nProduce a strategic Trend Report detailing 3 Emerging Trends. For each trend, break it down strictly into:\n- The Shift: (What is changing in [Target Market Region])\n- The Driver: (The cultural or technological reason it's happening)\n- The Threat: (The cost of inaction)\n- The Monetization Strategy: (Specific steps to pivot or create a product)\n- The "First 48-Hour" Action: (A concrete, immediate step to test this trend - e.g., a specific social media post idea, a beta offer, or a landing page headline).` },
+                "10": { title: "Lead Magnet (Freebie) Ideas", text: `Act as a Lead Generation Strategist and Digital Product Architect.\nYour task is to brainstorm highly irresistible lead magnet (freebie) ideas that perfectly bridge the gap to my core paid offer.\n\nContext variables:\n- Core Paid Product: [Name_and_Description_of_Your_Main_Paid_Product]\n- Primary Customer Pain Point: [The_Specific_Problem_They_Need_Solved_Immediately]\n\nDetailed Constraints:\nThe lead magnet must provide an immediate, undeniable "Quick Win". It must be highly consumable in under 15 minutes.\nAbsolutely DO NOT suggest generic, boring 50-page e-books. Focus on high-perceived-value formats like Notion templates, plug-and-play swipe files, calculators, interactive audits, or cheat sheets.\nThe lead magnet must logically make them crave the [Core Paid Product].\n\nOutput Format:\nPresent 3 distinct Lead Magnet concepts. For each concept, clearly define:\n1. The Hooky Title: (Needs to sound expensive even though it's free)\n2. The Format: (e.g., Notion Dashboard, Google Sheets template, Video Audit)\n3. The "Quick Win": (What specific result they achieve in the first 15 minutes)\n4. The Viral Traffic Hook: (Write 1 punchy, scroll-stopping headline or opening sentence to promote this freebie on Facebook, Zalo, or TikTok)\n5. The Upsell Bridge: (The exact script/call-to-action placed at the end of the lead magnet to smoothly transition them into buying the [Core Paid Product])` }
+            }
+        },
+        "C2": {
+            name: "Viral Copywriting",
+            prompts: {
+                "1": { title: "Pattern-Interrupt Hooks", text: `Act as a Viral Marketing Strategist and Niche Industry Expert.\nYour task is to craft 10 "Pattern-Interrupt" hooks that stop the scroll by challenging the viewer's current status or knowledge.\n\nContext variables:\n- Video Topic: [Video_Topic]\n- Target Audience: [Target_Audience]\n- Main Benefit/Payoff: [Benefit_of_Watching]\n\nDetailed Constraints:\n1. Deep Authority: Use industry-specific terminology to build instant credibility.\n2. The Status Gap: Every hook must make the viewer feel they are either making a "dangerous beginner mistake" or missing an "elite industry secret."\n3. Strict Length: Maximum 10 words per hook.\n4. No Cliches: Absolutely avoid "clickbait" phrases that sound like every other video.\n5. Psychological Triggers: Focus on Negativity Bias (Warning) or the "Impossible Contrast" (High Result vs. Low Effort).\n\nOutput Format:\nGenerate a Markdown table with exactly 3 columns:\n1. The Hook\n2. Psychological Trigger\n3. Target Emotion (e.g., Fear, Curiosity, Greed)` },
+                "2": { title: "PAS Short-Form Video Script", text: `Act as a Direct Response Copywriter specialized in short-form video.\nYour task is to write a punchy, high-conversion video script under 60 seconds using the PAS (Problem - Agitation - Solution) framework.\n\nContext variables:\n- Target Problem: [The_Specific_Pain_Point]\n- Solution: [Your_Product_or_Method]\n- Call to Action: [Desired_Action_e.g_Link_in_Bio]\n\nDetailed Constraints:\nThe script must be fast-paced.\n1. Problem: Define the problem in the first 3 seconds with a visual hook.\n2. Agitation: Spend 15 seconds making the problem feel emotionally costly and urgent.\n3. Solution: Introduce the solution as the only logical escape.\nInclude visual cues [in brackets], overlay text suggestions, and conversational language. Avoid jargon and slow intros.\n\nOutput Format:\nGenerate a structured Markdown table with exactly 3 columns:\n1. Time (Seconds)\n2. Visual/Action [Overlay Text]\n3. Audio/Dialogue` },
+                "3": { title: "10-Tweet Viral Thread", text: `Act as a Twitter Ghostwriter for Top 1% Thought Leaders.\nYour task is to transform the provided source content into a high-retention 10-tweet thread designed to go viral.\n\nContext variables:\n- Source_Content: [Source_Content]\n- Target_Audience: [Target_Audience]\n\nDetailed Constraints:\n1. The Frame-Breaker: Tweet 1 must challenge a "sacred cow" or a common belief in the industry to trigger comments.\n2. Visual Writing: Use strategic white space (max 3 lines per paragraph) and painting pictures with words.\n3. The Summary Slide: Tweet 9 must be a bulleted "Action Plan" in text format.\n4. Curiosity Loops: Every tweet must "earn" the next swipe by hinting at the value in the next tweet.\n5. Technicality: Each tweet strictly under 280 characters. No filler.\n\nOutput Format:\nGenerate a numbered list from 1 to 10. For each tweet, provide the exact text for the tweet. Below the text of key tweets, include a bracketed [Visual/Graphic Suggestion] on a new line to indicate what image should accompany it.` },
+                "4": { title: "Personal Story Facebook Post", text: `Act as a Narrative Architect and Emotional Copywriter.\nYour task is to write a Facebook post using a personal story to lead into a business lesson or product pitch.\n\nContext variables:\n- The Incident: [Describe_a_Specific_Event_or_Failure]\n- The Lesson Learned: [The_Key_Insight]\n- The Product Connection: [How_it_leads_to_your_offer]\n\nDetailed Constraints:\nStart "In Media Res" (in the middle of the action). Use sensory details and emotional realism.\nThe transition must feel organic, not forced. Tone: Vulnerable, Authentic, and slightly witty.\nEnd with an open-ended question to drive comments.\n\nOutput Format:\nProvide the post structured with strategic line breaks. Follow this flow (do not explicitly print these headings in the final text):\n- The Hook (The Action Start)\n- The Body (The Story)\n- The Bridge (The Lesson/Product)\n- The CTA/Question` },
+                "5": { title: "Conversion-Focused Instagram Caption", text: `Act as a Brand Positioning, SEO, and Consumer Psychology Strategist for Instagram.\nYour task is to write a highly engaging, conversion-focused caption.\n\nContext variables:\n- Visual Description: [Describe_what_is_in_the_photo_or_video]\n- Core Offer/Goal: [What_you_are_selling_or_promoting]\n- Target Audience: [Who_this_is_for]\n- Tone of Voice: [e.g_Bold_Minimalist_Educational_Sarcastic]\n\nDetailed Constraints:\n1. Benefit-First Hook: The first 5 words must create an immediate emotional pull by exposing a desired outcome, painful mistake, or identity gap relevant to the [Target_Audience].\n2. The Deeper Meaning: Do not describe the visual literally. Interpret what it represents, solves, or signals in relation to the [Core_Offer_Goal].\n3. The Micro-Story: Use max 3 sentences to create emotional relevance, tension, or relatability.\n4. Search Intent: Naturally embed searchable keywords and intent-based phrasing without keyword stuffing.\n5. Saveability: Include one tactical, practical, or perspective-shifting takeaway worth saving.\n6. CTA: Use a low-friction CTA matched to the audience’s awareness level (e.g., Save, DM, Comment, Click).\n7. Readability (Crucial): Optimize for mobile scanning. Keep paragraphs strictly to 1-2 sentences. Use strategic white space between paragraphs. Limit emojis to a maximum of 3 intentional choices for the entire caption.\n\nOutput Format:\nProvide the output strictly in this structure:\n- The Caption: (Write the full caption here with strategic line breaks)\n- The Saveable Insight: (Extract the one-line value bomb here to be used as text-on-image)\n- Strategic Hashtags: Provide 5 High Volume (Broad), 5 Low Volume (Targeted), and 5 Descriptive (SEO-based).` },
+                "6": { title: "5 Emotional Headline Variations", text: `Act as a Master Copywriter and Psychological Profiler.\nYour task is to rewrite a single headline into 5 different versions targeting specific emotional drivers.\n\nContext variables:\n- Original Headline: [Your_Draft_Headline]\n- Target Result: [What_the_reader_gets]\n\nDetailed Constraints:\nRewrite using:\n1. Fear (Danger of inaction)\n2. Curiosity (The knowledge gap)\n3. Greed (The massive gain)\n4. Logic (Data-driven authority)\n5. Urgency (Time-sensitive pressure)\n\nOutput Format:\nGenerate a Markdown table with exactly 3 columns:\n1. Emotional Angle\n2. New Headline\n3. Why it works` },
+                "7": { title: "Authentic BTS Script", text: `Act as a Creative Director and Trust-Building Story Strategist.\nYour task is to write a Behind-The-Scenes (BTS) script to build deep authenticity for a brand.\n\nContext variables:\n- Process_to_Showcase: [Process_to_Showcase]\n- Business_Type: [Business_Type]\n\nDetailed Constraints:\n1. The Pivot Point: You MUST feature a specific moment where something went wrong or a difficult decision had to be made.\n2. Anti-Corporate: Avoid "Corporate Cleanliness". Show the messy reality, the sweat, or the "unpolished" office/workshop.\n3. Small Details: Focus on the micro-efforts that the customer never sees but makes the product/service great.\n4. Aesthetic: Define a "Raw" or "Authentic" visual style.\n\nOutput Format:\nProvide a structured script with clear headings for each section:\n- Overall Video Aesthetic\n- Scene 1: The Messy Hook\n- Scene 2: The Process\n- Scene 3: The Pivot Point\n- Scene 4: The Result\n- Scene 5: The Human Connection\nUnder EACH scene heading, separate the instructions strictly into [Visual Actions] and (Audio/Voiceover).` },
+                "8": { title: "Provocative Social Media Post", text: `Act as a Social Media Psychologist.\nYour task is to write a provocative post based on a controversial topic to maximize engagement.\n\nContext variables:\n- Topic: [Topic]\n- Core_Controversy: [Core_Controversy]\n\nDetailed Constraints:\n1. The Hard Choice: Present a choice between two "semi-unpopular" truths. Avoid "Blue vs. Red" simplicity.\n2. Identity-Trigger: Frame the debate as "The Old Way" (comfort) vs. "The Future" (painful but necessary).\n3. Take a Side: Do not stay neutral. Take a soft stance to force the audience to defend their own identity.\n4. Low Friction: Use 1-word or 1-emoji responses in the CTA.\n\nOutput Format:\nStructure the output using clear text blocks with the following headings:\n- The Provocative Statement (The Hook)\n- The Two Opposing Sides (The Body)\n- The CTA Question (The Call to Action)\n- 3 "Controversial" Comment Starters (Provide a bulleted list of 3 short phrases to ignite the fire in the comment section).` },
+                "9": { title: "Listicle Short-Form Video Script", text: `Act as an Educational Content Creator.\nYour task is to write a high-retention script for a "Listicle" style short-form video.\n\nContext variables:\n- Topic: [Topic]\n- List_Items: [List_Items]\n- Target_Audience: [Target_Audience]\n\nDetailed Constraints:\nStart with a negative hook (e.g., "Stop doing X"). Each point must be under 10 seconds, punchy, and deliver one clear value.\nUse pattern interrupts and fast pacing. Structure: Save the best for last. Include one "Surprise Bonus" point.\n\nOutput Format:\nWrite a scene-by-scene script. Use bold headings for: The Hook, Point 1 to X, The Bonus Point, and The Fast-Paced CTA. Under each heading, clearly separate [On-Screen Visuals/B-Roll] from the (Spoken Audio). Do not use tables.` },
+                "10": { title: "Crisis Communications Response", text: `Act as a Crisis Communications Expert and Authority Builder.\nYour task is to write a public response to a skeptical or negative comment.\n\nContext variables:\n- Negative_Comment: [Negative_Comment]\n- The_Truth_or_Fact: [The_Truth_or_Fact]\n- Tone_Direction: [Tone_Direction]\n\nDetailed Constraints:\nFramework:\n1. Acknowledge (Disarm their emotion)\n2. Reframe (Shift the perspective from the problem to the standard)\n3. Evidence (Use logic, facts, or expertise).\nDo not be defensive. Win the respect of silent observers.\n\nOutput Format:\nProvide the response in two distinct sections:\n1. The Direct Response: The exact, finalized text to reply to the comment.\n2. Psychological Breakdown: A bulleted list explaining exactly why this framing works and how it applies the Acknowledge/Reframe/Evidence framework.` }
+            }
+        },
+        "C3": {
+            name: "Visual Art Guidance",
+            prompts: {
+                "1": { title: "Universal Product Mockup", text: `Act as a Professional Product Photographer and Brand Presentation Specialist.\nYour task is to generate a master prompt for a premium mockup of any item.\n\nContext variables:\n- Main_Subject: [Main_Subject]\n- Surface_Material: [Surface_Material]\n- Decorative_Elements: [Decorative_Elements]\n- Aesthetic_Style: [Aesthetic_Style]\n- Color_Palette: [Color_Palette]\n\nStructure:\n[A [Main_Subject] placed on a premium [Surface_Material] pedestal]\n+\n[set against a clean studio background with subtle [Decorative_Elements] shadows]\n+\n[Eye-level shot, 50mm lens, macro photography, soft natural lighting, shallow depth of field]\n+\n[[Aesthetic_Style], [Color_Palette] tones, clean composition, intentional negative space]\n+\n[Photorealistic, 8k resolution, ultra-detailed textures, masterpiece quality]\n\nDetailed Constraints:\n- Prioritize subject hierarchy\n- Avoid visual clutter\n- Ensure textures (grain, fabric, glass, or organic) are ultra-realistic` },
+                "2": { title: "Universal Professional Headshot", text: `Act as a Professional Portrait Photographer and Personal Branding Specialist.\nYour task is to generate a master prompt for a high-authority professional headshot.\n\nContext variables:\n- Subject_Description: [Subject_Description]\n- Professional_Environment: [Professional_Environment]\n- Professional_Vibe: [Professional_Vibe]\n\nStructure:\n[A professional [Subject_Description] with a confident and approachable expression]\n+\n[positioned in a softly blurred [Professional_Environment] background]\n+\n[Rembrandt lighting, eye-level shot, 85mm portrait lens, beautiful bokeh effect, sharp focus on eyes]\n+\n[Professional photography style, natural skin tones, [Professional_Vibe] mood]\n+\n[High definition, 8k resolution, ultra-detailed, skin texture realism]\n\nDetailed Constraints:\n- Emphasize trust and authority\n- Keep expression natural\n- Avoid over-retouching` },
+                "3": { title: "Universal Background System", text: `Act as a UI/UX Graphic Designer and Visual Systems Specialist.\nYour task is to generate a master prompt for a clean, spacious background image.\n\nContext variables:\n- Theme_Element: [Theme_Element]\n- Color_Palette: [Color_Palette]\n\nStructure:\n[Abstract [Theme_Element] flowing gracefully with a sense of movement]\n+\n[Clean airy background with spacious negative space for content placement]\n+\n[Wide angle, soft global illumination, no harsh shadows, smooth depth layering]\n+\n[Modern minimalist design, [Color_Palette] gradient, elegant and professional mood]\n+\n[4k resolution, smooth render, noise-free, high-quality digital art]\n\nDetailed Constraints:\n- Prioritize readability support\n- Avoid visual noise\n- Keep composition breathable` },
+                "4": { title: "Universal Minimalist Logo", text: `Act as a Logo Design Strategist and Brand Identity Specialist.\nYour task is to generate a master prompt for a minimalist flat vector logo.\n\nContext variables:\n- Core_Visual_Concept: [Core_Visual_Concept]\n- Brand_Style_Direction: [Brand_Style_Direction]\n- Primary_Color: [Primary_Color]\n\nStructure:\n[A minimalist flat vector logo design centered on [Core_Visual_Concept]]\n+\n[isolated on a clean neutral background, perfect symmetrical balance]\n+\n[Clean geometric construction, balanced visual weight, scalable proportions, bold lines]\n+\n[[Brand_Style_Direction], solid [Primary_Color], modern and timeless aesthetic]\n+\n[Vector graphics style, high contrast, high resolution, simple, recognizable, brand-ready]\n\nDetailed Constraints:\n- Prioritize simplicity and clarity\n- Ensure recognizability at small sizes\n- Avoid 3D effects unless specified` },
+                "5": { title: "Universal Seamless Pattern", text: `Act as a Surface Pattern Designer and Brand Asset Specialist.\nYour task is to generate a master prompt for a seamless repeating pattern.\n\nContext variables:\n- Visual_Elements: [Visual_Elements]\n- Composition_Logic: [e.g_Grid_Random_Radial_Symmetrical]\n- Art_Style_Direction: [Art_Style_Direction]\n- Color_Palette: [Color_Palette]\n- Pattern_Density: [Sparse_or_Balanced_or_Dense]\n\nStructure:\n[A seamless repeating pattern featuring [Visual_Elements] arranged in a [Composition_Logic] layout]\n+\n[structured with [Pattern_Density] distribution to ensure visual rhythm and flow]\n+\n[Top-down orthographic view, even studio lighting, subtle layering for depth]\n+\n[[Art_Style_Direction], [Color_Palette], intricate detailing, harmonious repetition]\n+\n[Perfect seamless tiling, printable quality, high resolution, 4k, clean pattern system]\n\nDetailed Constraints:\n- Maintain repeat precision with no visible seams\n- Control density through [Pattern_Density]\n- Ensure the [Composition_Logic] is strictly followed for brand consistency` },
+                "6": { title: "Universal Narrative Illustration", text: `Act as a Professional Editorial Illustrator and Visual Storytelling Specialist.\nYour task is to generate a master prompt for a conceptual illustration.\n\nContext variables:\n- Core_Concept_or_Action: [Core_Concept_or_Action]\n- Environment_Setting: [Environment_Setting]\n- Illustration_Style_Direction: [Illustration_Style_Direction]\n- Color_Palette: [Color_Palette]\n\nStructure:\n[A modern illustration depicting [Core_Concept_or_Action]]\n+\n[set within a clean conceptual [Environment_Setting]]\n+\n[Dynamic perspective, soft studio lighting, visual storytelling focus]\n+\n[[Illustration_Style_Direction], [Color_Palette], clean shapes, fluid lines]\n+\n[High resolution, 4k, polished digital finish, professional editorial style]\n\nDetailed Constraints:\n- Focus on visual storytelling\n- Keep concept clarity strong\n- Maintain clean composition` },
+                "7": { title: "Universal Commercial Photography", text: `Act as a Commercial Product Photographer and Visual Styling Specialist.\nYour task is to generate a master prompt for premium commercial imagery.\n\nContext variables:\n- Subject_Item: [Subject_Item]\n- Styling_Props: [Styling_Props]\n- Texture_Detail: [Texture_Detail]\n- Mood_Vibe: [Mood_Vibe]\n\nStructure:\n[A close-up of [Subject_Item] with realistic [Texture_Detail]]\n+\n[arranged with [Styling_Props] on a premium contextual surface]\n+\n[Macro lens, side studio lighting to enhance texture, low angle shot, sharp focus]\n+\n[Cinematic commercial photography style, [Mood_Vibe] tones, rich atmospheric depth]\n+\n[8k resolution, photorealistic, hyper-detailed, commercial quality]\n\nDetailed Constraints:\n- Emphasize texture realism\n- Use [Styling_Props] to build the industry story\n- Maintain premium commercial styling` },
+                "8": { title: "Universal Sticker & Icon", text: `Act as a Sticker and Icon Design Specialist. Your task is to generate a master prompt for a standalone visual asset.\n\nContext variables:\n- Main_Object: [Main_Object]\n- Shape_Language: [Rounded_or_Sharp_or_Geometric_or_Organic]\n- Art_Style_Direction: [Art_Style_Direction]\n- Color_Palette: [Color_Palette]\n- Expression_or_Personality: [Cute_or_Bold_or_Premium_or_Playful_or_Serious]\n\nStructure:\n[A stylized [Main_Object] designed as a standalone visual asset with strong [Shape_Language] silhouette]\n+\n[isolated on a clean white or transparent background with clear die-cut outline]\n+\n[Flat 2D perspective, centered composition, even lighting, high shape readability]\n+\n[[Art_Style_Direction], expressive [Expression_or_Personality] visual personality, vibrant [Color_Palette]]\n+\n[High definition, crisp edges, scalable icon system, print-ready quality]\n\nDetailed Constraints:\n- Maintain silhouette recognition at small sizes\n- Ensure visual personality is clearly readable\n- Keep shape consistency and clean edge separation` },
+                "9": { title: "Universal Cinematic Environment", text: `Act as a Concept Artist and Cinematic Environment Designer. Your task is to generate a master prompt for an epic environmental scene.\n\nContext variables:\n- Environment_Type: [Environment_Type]\n- Focal_Point_Element: [e.g_A_lone_tower_a_glowing_tree_a_futuristic_skyscraper]\n- Atmospheric_Elements: [Atmospheric_Elements]\n- Mood_Style: [Mood_Style]\n\nStructure:\n[A majestic cinematic wide-scale view of [Environment_Type] featuring [Focal_Point_Element] as the primary centerpiece]\n+\n[immersed in dramatic [Atmospheric_Elements] and layered environmental depth]\n+\n[Ultra-wide angle, golden hour lighting, volumetric god rays, cinematic lens flare]\n+\n[Cinematic color grading, dramatic atmosphere, [Mood_Style] tones]\n+\n[8k resolution, masterpiece, hyper-detailed environment, Unreal Engine 5 render style]\n\nDetailed Constraints:\n- Prioritize the [Focal_Point_Element] to anchor the composition\n- Enhance emotional scale and visual immersion\n- Maintain cinematic depth and layered foreground/background elements` },
+                "10": { title: "Universal Isometric Visualization", text: `Act as a 3D Artist and Systems Visualization Specialist. Your task is to generate a master prompt for a structured isometric visualization.\n\nContext variables:\n- System_or_Process_Flow: [System_or_Process_Flow]\n- Visual_Style_Direction: [Visual_Style_Direction]\n- Tone_Vibe: [Tone_Vibe]\n\nStructure:\n[A detailed 3D isometric visualization of [System_or_Process_Flow]]\n+\n[with layered interfaces, floating representative elements, and interconnected structures]\n+\n[45-degree isometric perspective, soft global illumination, accent lighting]\n+\n[[Visual_Style_Direction], premium materials like glass and metal, [Tone_Vibe] vibe]\n+\n[8k resolution, clean render, high-quality 3D model, Octane render]\n\nDetailed Constraints:\n- Maintain system clarity\n- Show logical flow\n- Keep visual hierarchy strong` }
+            }
+        },
+        "C4": {
+            name: "Engagement & Sales",
+            prompts: {
+                "1": { title: "Welcome Sequence", text: `Act as an Email Marketing Strategist and Copywriter. Your task is to write a highly engaging 3-part welcome email sequence for new subscribers.\n\nContext variables:\n- Target_Audience: [Target_Audience]\n- Lead_Magnet_or_Opt_in_Reason: [What_they_signed_up_for]\n- Core_Offer: [The_Main_Product_or_Service_you_sell]\n- Brand_Tone: [e.g_Friendly_Professional_Witty_Direct]\n\nStructure:\n[Email 1: The Delivery & Welcome - Deliver the Lead Magnet and set expectations]\n+\n[Email 2: The Origin Story / Value - Share a relatable story or valuable lesson]\n+\n[Email 3: The Soft Pitch - Naturally connect their pain point to your offer]\n\nDetailed Constraints:\n- Build trust before selling\n- Use open loops between emails\n- Keep tone aligned with [Brand_Tone]\n- Make each email feel connected\n\nOutput Format:\nProvide 3 complete emails including: Send Time, 2 Subject Lines, Preview Text, Full Email Body.` },
+                "2": { title: "Flash Sale / Last Chance Email", text: `Act as a Direct Response Copywriter. Your task is to write a high-converting urgency-driven closing email.\n\nContext variables:\n- Product_Name: [Product_Name]\n- Discount_or_Offer: [Discount_or_Offer]\n- Time_Limit: [Time_Limit]\n- Main_Customer_Pain_Point: [Pain_Point]\n\nStructure:\n[Urgent Hook]\n+\n[Reminder of the offer]\n+\n[Scarcity/FOMO layer]\n+\n[Direct CTA]\n\nDetailed Constraints:\n- Keep under 200 words\n- Create urgency without sounding desperate\n- Focus on transformation missed if ignored\n\nOutput Format:\n- 3 Subject Lines\n- Email Body\n- CTA Button Text` },
+                "3": { title: "AIDA Landing Page", text: `Act as a Conversion Rate Optimization Copywriter. Your task is to write landing page copy using AIDA.\n\nContext variables:\n- Product_or_Service: [Product_or_Service]\n- Target_Audience: [Target_Audience]\n- Unique_Selling_Proposition: [USP]\n- Ultimate_Benefit: [Ultimate_Benefit]\n\nStructure:\n[Attention]\n+\n[Interest]\n+\n[Desire]\n+\n[Action]\n\nDetailed Constraints:\n- Headline must be clear in 3 seconds\n- Focus on transformation, not features\n- Keep paragraphs short\n\nOutput Format:\n- Headline\n- Subheadline\n- Interest Section\n- Desire Bullets\n- Guarantee\n- CTA Section` },
+                "4": { title: "Universal Price Objection Handling", text: `Act as an Elite Sales Closer and Buyer Psychology Expert.\nYour task is to write psychological scripts to handle the "price is too high" objection without immediately offering a discount.\n\nContext variables:\n- Product_or_Service: [Product_or_Service]\n- Product_Type: [B2B_Service_or_B2C_Physical_Good_or_Digital_Product]\n- Price_Point: [Price_Point]\n- Value_Delivered: [What_they_gain_e.g_ROI_Status_Quality_Time_saved]\n\nStructure:\n[Acknowledge & Validate: Agree to lower their defense without sounding defensive]\n+\n[Isolate: Confirm price is the *only* friction point]\n+\n[Reframe: Shift perspective based on the [Product_Type] (Logic for B2B/Digital, Emotion/Quality for B2C)]\n+\n[Soft Close: A low-pressure question to move forward]\n\nDetailed Constraints:\n- Never sound argumentative or desperate.\n- Avoid forcing "ROI" logic onto emotional or physical lifestyle purchases. Focus on longevity, quality, or experience if applicable.\n- Keep the dialogue conversational, as if spoken or texted naturally.\n\nOutput Format:\nProvide 3 distinct conversational scripts tailored to the product type:\n1. The Investment/Time-Saver Reframe (Focus on long-term ROI or hours saved)\n2. The Quality & Longevity Reframe (The "Buy nice or buy twice" angle)\n3. The Value Breakdown/Apples-to-Oranges (Showing why comparing this to cheaper alternatives is flawed)` },
+                "5": { title: "Conversational DM Closing Script", text: `Act as a Conversational Sales Strategist and Buyer Psychology Expert.\nYour task is to create a step-by-step DM/chat sales flow that qualifies, diagnoses, handles objections, and closes naturally.\n\nContext variables:\n- Product_or_Service: [Product_or_Service]\n- Customer_Goal: [Desired_Result]\n- Qualification_Question: [Qualification_Question]\n- Main_Trust_Barrier: [Why_they_hesitate_to_trust]\n- Buying_Intent_Level: [Exploring_or_Comparing_or_Ready_to_buy]\n- Common_Objection: [Common_Objection]\n\nStructure:\n[Opening Connection: match their intent level]\n+\n[Qualification Layer: understand their exact need]\n+\n[Pain Diagnosis Layer: uncover deeper problem]\n+\n[Trust Building Layer: remove [Main_Trust_Barrier]]\n+\n[Recommendation Layer: connect product to their need]\n+\n[Objection Layer]\n+\n[Conversion Layer]\n\nDetailed Constraints:\n- Keep messages short and conversational\n- Every message must move toward clarity or conversion\n- Adapt tone based on [Buying_Intent_Level]\n- Avoid robotic chatbot language\n\nOutput Format:\n- Message 1\n- Message 2\n- Message 3\n- Trust Response\n- Objection Response\n- Closing Message` },
+                "6": { title: "Non-Sleazy CTA System", text: `Act as a Behavioral Psychologist and Conversion Copywriter. Your task is to generate frictionless CTAs based on customer awareness stage.\n\nContext variables:\n- Desired_Action: [Desired_Action]\n- Value_of_Action: [Value_of_Action]\n- Audience_Hesitation: [Audience_Hesitation]\n- Awareness_Level: [Unaware_or_Problem-aware_or_Solution-aware_or_Product-aware]\n\nStructure:\n[Analyze hesitation]\n+\n[Match CTA to awareness level]\n+\n[Reduce risk with microcopy]\n\nDetailed Constraints:\n- Avoid generic CTA phrases\n- Keep CTA under 5 words\n- Match psychological readiness\n- Make next step feel easy\n\nOutput Format:\nMarkdown table:\n1. Awareness Level\n2. CTA Button Text (5 options)\n3. Microcopy\n4. Why it works psychologically` },
+                "7": { title: "Recovery Sequence", text: `Act as a Customer Recovery and Retention Strategist. Your task is to create a 2-part recovery sequence for unfinished customer actions.\n\nContext variables:\n- Unfinished_Action: [Cart_or_Booking_or_Application_or_Inquiry]\n- Main_Offer: [Main_Offer]\n- Friction_Point: [Friction_Point]\n- Recovery_Incentive: [Optional_Incentive]\n\nStructure:\n[Message 1: Helpful Reminder]\n+\n[Message 2: Final Opportunity]\n\nDetailed Constraints:\n- First message assumes distraction, not rejection\n- Second message introduces urgency or incentive\n- Address [Friction_Point] directly\n- Must work for products and services\n\nOutput Format:\nMessage 1: Timing, Subject, Body, CTA\nMessage 2: Timing, Subject, Body, CTA` },
+                "8": { title: "Testimonial Request", text: `Act as a Customer Success Manager. Your task is to write a tactful testimonial request email.\n\nContext variables:\n- Product_or_Service: [Product_or_Service]\n- Time_Since_Purchase: [Time_Since_Purchase]\n- Core_Transformation: [Core_Transformation]\n\nStructure:\n[Check-in]\n+\n[Easy Request]\n+\n[Guided Prompt]\n\nDetailed Constraints:\n- Be appreciative\n- Reduce effort required\n- Keep it relationship-based\n\nOutput Format:\n- Subject Line\n- Email Body\n- 3 Guiding Questions` },
+                "9": { title: "One-Click Upsell", text: `Act as a Revenue Optimization Strategist. Your task is to write a high-converting post-purchase upsell page.\n\nContext variables:\n- Just_Purchased_Product: [Just_Purchased_Product]\n- Upsell_Product: [Upsell_Product]\n- Upgrade_Type: [Complement_or_Upgrade_or_Add-on]\n- Synergy_Reason: [Synergy_Reason]\n- Exclusive_Discount: [Exclusive_Discount]\n\nStructure:\n[Success Confirmation Hook]\n+\n[Why this [Upgrade_Type] makes their original purchase better]\n+\n[Exclusive Offer]\n+\n[One-click CTA]\n+\n[Soft Decline]\n\nDetailed Constraints:\n- Make synergy crystal clear\n- Create urgency\n- Keep friction minimal\n- Reinforce instant benefit\n\nOutput Format:\n- Headline\n- Subheadline\n- Why Paragraph\n- Offer\n- CTA Button\n- Decline Link` },
+                "10": { title: "Features → Benefits Matrix", text: `Act as a Master Direct Response Copywriter. Your task is to transform technical features into emotional benefits.\n\nContext variables:\n- List_of_Features: [3_to_5_Features]\n- Target_Audience: [Target_Audience]\n- Ultimate_Desire: [Ultimate_Desire]\n\nStructure:\n[Feature Analysis]\n+\n[So What Test]\n+\n[Which Means Test]\n\nDetailed Constraints:\n- Translate logic into emotion\n- Make benefits customer-centric\n- Use vivid language\n\nOutput Format:\nMarkdown table:\n1. Feature\n2. Advantage\n3. Deep Benefit\n4. Copywriting Snippet` }
+            }
+        },
+        "C5": {
+            name: "The Fixer",
+            prompts: {
+                "1": { title: "AI Tone Detox", text: `Act as an Elite AI-Detox Editor and Conversational Copywriter. Your task is to humanize the provided text by stripping away robotic patterns, clichés, and artificial cadence.\n\nContext variables:\n- Original_Text: [Paste_Text_Here]\n- Target_Audience: [Who_is_reading_this]\n- Desired_Voice: [e.g_Casual_Direct_Warm_Professional_but_approachable]\n\nStructure:\n[Analyze the text for common AI footprints (e.g., words like "delve", "navigate", "landscape", "testament", "tapestry", overly symmetrical sentences)]\n+\n[Rewrite the text using everyday, conversational language tailored to the [Target_Audience]]\n+\n[Inject varied sentence lengths to create natural human breathing rhythm]\n\nDetailed Constraints:\n- Completely eliminate fluff and predictable AI transition words ("Furthermore", "In conclusion")\n- Make it sound like a smart human explaining something over coffee\n- Do not lose the core meaning or data points of the original text\n\nOutput Format:\n1. The Humanized Text\n2. A brief "Detox Report" listing the robotic words/phrases that were removed.` },
+                "2": { title: "The Executive Condenser", text: `Act as an Executive Editor and Concise Writer. Your task is to condense a rambling paragraph into a punchy, high-impact version without losing its core insights.\n\nContext variables:\n- Rambling_Text: [Paste_Text_Here]\n- Core_Message: [The_one_thing_the_reader_MUST_understand]\n- Word_Count_Limit: [e.g_Under_50_words_or_50_percent_of_original_length]\n\nStructure:\n[Identify and extract the [Core_Message] and key data points]\n+\n[Strip away redundant adjectives, filler words, and circular explanations]\n+\n[Rewrite the text using strong verbs and active voice to maximize information density]\n\nDetailed Constraints:\n- Ruthlessly cut anything that does not serve the [Core_Message]\n- Ensure the new text is punchy and instantly scannable\n- Never use two words when one will do\n\nOutput Format:\n1. The Optimized Text\n2. Condensation Ratio (e.g., "Cut by 45%")` },
+                "3": { title: "The Tone Alchemist", text: `Act as a Satirical Copywriter and Tone Alchemist. Your task is to rewrite a stiff, formal text into a witty, lightly sarcastic, and highly engaging piece.\n\nContext variables:\n- Formal_Text: [Paste_Text_Here]\n- Target_Emotion: [e.g_Chuckle_Agreement_Irony]\n- Boundary: [What_absolutely_NOT_to_mock_or_cross]\n\nStructure:\n[Analyze the core facts of the [Formal_Text]]\n+\n[Inject clever observations, irony, or witty analogies to deliver those same facts]\n+\n[Ensure the humor highlights the [Target_Emotion] while strictly respecting the [Boundary]]\n\nDetailed Constraints:\n- Keep the humor smart and dry, not slapstick or offensive\n- Avoid forcing jokes; let the humor come from relatable situational irony\n- The underlying message must still be clear and authoritative\n\nOutput Format:\n1. The Witty Rewrite\n2. "The Punchline Breakdown" (A 1-sentence explanation of why the tone shift works).` },
+                "4": { title: "The Structural Coach", text: `Act as a Structural Linguist and Elite Writing Coach. Your task is to analyze a text, identify weak sentence structures, and provide powerful alternatives.\n\nContext variables:\n- Draft_Text: [Paste_Text_Here]\n- Primary_Goal_of_Text: [e.g_Persuade_to_buy_Inform_clearly_Tell_a_story]\n\nStructure:\n[Scan the [Draft_Text] for passive voice, run-on sentences, weak verbs (is/are/was), and repetitive sentence openings]\n+\n[Isolate the 3 weakest sentences or structural flaws]\n+\n[Provide a direct, active, and rhythmically strong alternative for each]\n\nDetailed Constraints:\n- Be strictly analytical and objective in your critique\n- Focus heavily on verb strength (replacing adverbs with strong action verbs)\n- Ensure the alternatives align with the [Primary_Goal_of_Text]\n\nOutput Format:\nProvide a Markdown table with 3 columns:\n1. Original Weak Sentence\n2. The Structural Issue (Why it's weak)\n3. The Stronger Alternative` },
+                "5": { title: "The Vivid Storyteller", text: `Act as a Master Storyteller and Creative Educator. Your task is to breathe life into dry, abstract text by injecting vivid metaphors and real-world examples.\n\nContext variables:\n- Dry_Text: [Paste_Text_Here]\n- Audience_Background: [e.g_Tech_startup_founders_High_school_teachers_Farmers]\n- Metaphor_Theme: [e.g_Sports_Cooking_Architecture_Nature]\n\nStructure:\n[Analyze the abstract concept in the [Dry_Text]]\n+\n[Create a highly relatable analogy or metaphor based on the [Metaphor_Theme]]\n+\n[Weave a concrete, real-world example into the text that perfectly matches the [Audience_Background]]\n\nDetailed Constraints:\n- Avoid clichéd metaphors (e.g., "Think outside the box", "A well-oiled machine")\n- Ensure the analogy maps perfectly to the logical structure of the original concept\n- The result must feel illuminating and easy to visualize\n\nOutput Format:\n1. The Enhanced Text\n2. Metaphor Logic (A brief explanation of how the metaphor maps to the concept).` },
+                "6": { title: "The UX Formatter", text: `Act as an Information Architect and UX Writer. Your task is to reformat messy, blocky text into a scannable, visually appealing bulleted list.\n\nContext variables:\n- Messy_Text: [Paste_Text_Here]\n- Key_Takeaways_Count: [Number_of_bullets_desired]\n\nStructure:\n[Extract the absolute core ideas from the [Messy_Text]]\n+\n[Condense these ideas into exactly [Key_Takeaways_Count] bullet points]\n+\n[Assign one highly relevant, professional emoji to the beginning of each bullet]\n+\n[Bold the most critical keyword or phrase in each line for extreme scannability]\n\nDetailed Constraints:\n- Strict visual hierarchy: Do not exceed 2 lines of text per bullet point\n- Only use one emoji per line; do not clutter the text with random symbols\n- The flow of bullets must follow a logical sequence\n\nOutput Format:\n1. A 1-sentence TL;DR summary at the top\n2. The Cleaned Bulleted List` },
+                "7": { title: "Explain Like I'm 5", text: `Act as an Expert Simplifier and Plain Language Translator. Your task is to translate complex industry jargon into simple, everyday language that an 11-year-old can deeply understand.\n\nContext variables:\n- Jargon_Heavy_Text: [Paste_Text_Here]\n- Industry_Niche: [Where_this_text_comes_from]\n\nStructure:\n[Identify all technical terms, acronyms, and industry jargon in the text]\n+\n[Translate the core mechanism using everyday concepts and simple vocabulary]\n+\n[Rewrite the entire passage focusing on clarity, removing all friction from the reading experience]\n\nDetailed Constraints:\n- Zero jargon allowed in the final output\n- Do not talk down to the reader; simplify the vocabulary, not the intelligence of the concept\n- Keep sentences short and use active voice\n\nOutput Format:\n1. The ELI5 Translation\n2. A "Jargon Decoder" Glossary (Mapping the complex terms to their simple definitions).` },
+                "8": { title: "The Rhythm Polisher", text: `Act as an Elite Proofreader and Prose Stylist. Your task is to silently fix mechanical errors and optimize sentence rhythm (flow) without changing the author's original voice.\n\nContext variables:\n- Draft_Text: [Paste_Text_Here]\n- Desired_Pacing: [e.g_Fast_Punchy_Slow_Academic_Musical_Flowing]\n\nStructure:\n[Correct all spelling, punctuation, and grammatical errors silently]\n+\n[Apply the "Rule of Three" and vary sentence lengths (Short, Medium, Long) to create a satisfying reading rhythm]\n+\n[Ensure transitions between sentences feel frictionless and align with the [Desired_Pacing]]\n\nDetailed Constraints:\n- Do NOT rewrite the text entirely or change the author's unique vocabulary (unless it's grammatically incorrect)\n- Focus entirely on the "music" of the words—how it sounds when read aloud\n- Eliminate awkward phrasing or clunky repetitions\n\nOutput Format:\n1. The Polished Text\n2. A brief note on the rhythm adjustments made.` },
+                "9": { title: "The Flow Architect", text: `Act as a Continuity Editor and Narrative Architect. Your task is to seamlessly weave 3 disjointed paragraphs into a cohesive, logical single narrative flow.\n\nContext variables:\n- Paragraph_1: [Paste_Text_1]\n- Paragraph_2: [Paste_Text_2]\n- Paragraph_3: [Paste_Text_3]\n- Overarching_Theme: [The_main_idea_tying_them_together]\n\nStructure:\n[Analyze the core point of each paragraph and relate them to the [Overarching_Theme]]\n+\n[Create smooth, logical transition sentences (bridges) between P1 -> P2, and P2 -> P3]\n+\n[Ensure a logical progression (e.g., Problem -> Agitation -> Solution, or Past -> Present -> Future)]\n\nDetailed Constraints:\n- Do not just stack the paragraphs together; the transitions must feel invisible and organic\n- Eliminate redundant information that overlaps between the paragraphs\n- The final output must read like it was conceived as a single thought\n\nOutput Format:\n1. The Cohesive Narrative\n2. "The Bridge Logic" (Explain how you connected the disjointed ideas).` },
+                "10": { title: "The Empathy Converter", text: `Act as a Crisis Communicator and Empathy Coach. Your task is to transform a defensive, stubborn, or conservative text into an open-minded, empathetic, and collaborative message.\n\nContext variables:\n- Defensive_Text: [Paste_Text_Here]\n- Target_Recipient: [Who_is_receiving_this_message]\n- Core_Boundary: [What_you_still_need_to_firmly_protect_or_maintain]\n\nStructure:\n[Identify the aggressive, accusatory ("You did X"), or overly defensive language]\n+\n[Rewrite the opening to validate the [Target_Recipient]'s perspective and emotions]\n+\n[Reframe the argument using "I" statements and collaborative framing ("How can we...")]\n+\n[Firmly but politely state the [Core_Boundary] without sounding threatening]\n\nDetailed Constraints:\n- The tone must be emotionally intelligent and de-escalating\n- Never apologize for the [Core_Boundary], but soften the delivery of it\n- Transform conflict into a problem-solving partnership\n\nOutput Format:\n1. The Empathetic Rewrite\n2. Psychological Analysis (Why this new version will de-escalate the situation).` }
+            }
+        }
+    };
+
+
+    // ==========================================
+    // 2. THEME LOGIC (Chế độ Tối/Sáng)
+    // ==========================================
+    const themeBtn = document.getElementById('themeToggle');
+
+    // Tự động kiểm tra xem thiết bị khách hàng đang dùng Light hay Dark mode
+    const systemPrefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+    const savedTheme = localStorage.getItem('theme');
+
+    // Quyết định giao diện mặc định
+    if (savedTheme === 'light' || (!savedTheme && systemPrefersLight)) {
+        document.documentElement.setAttribute('data-theme', 'light');
+        themeBtn.textContent = ' Dark Mode';
+    }
+
+    // Xử lý sự kiện bấm nút Toggle
+    themeBtn.addEventListener('click', () => {
+        let currentTheme = document.documentElement.getAttribute('data-theme');
+        if (currentTheme === 'light') {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('theme', 'dark');
+            themeBtn.textContent = ' Light Mode';
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+            localStorage.setItem('theme', 'light');
+            themeBtn.textContent = ' Dark Mode';
+        }
+    });
+
+    // ==========================================
+    // 3. CORE LOGIC (Xử lý Prompts)
+    // ==========================================
+    const catSelect = document.getElementById('categorySelect');
+    const promptSelect = document.getElementById('promptSelect');
+    const searchInput = document.getElementById('searchId');
+    const varsContainer = document.getElementById('dynamicVarsContainer');
+    const generateBtn = document.getElementById('generateBtn');
+    const outputBox = document.getElementById('outputBox');
+    const copyBtn = document.getElementById('copyBtn');
+    const badge = document.getElementById('activeIdBadge');
+
+    let currentTemplate = "";
+    let currentVars = [];
+
+    // Initialize Categories
+    for (const [catId, catData] of Object.entries(db)) {
+        let opt = document.createElement('option');
+        opt.value = catId;
+        opt.textContent = `${catId}: ${catData.name}`;
+        catSelect.appendChild(opt);
+    }
+
+    // Category Change Event
+    catSelect.addEventListener('change', function() {
+        const catId = this.value;
+        promptSelect.innerHTML = '<option value="">-- Select Prompt --</option>';
+        if(catId) {
+            promptSelect.disabled = false;
+            for (const [pId, pData] of Object.entries(db[catId].prompts)) {
+                let opt = document.createElement('option');
+                opt.value = pId;
+                opt.textContent = `${pId}. ${pData.title}`;
+                promptSelect.appendChild(opt);
+            }
+        } else {
+            promptSelect.disabled = true;
+        }
+        resetForm();
+    });
+
+    // Prompt Change Event
+    promptSelect.addEventListener('change', function() {
+        if(this.value) {
+            const catId = catSelect.value;
+            const pId = this.value;
+            loadPrompt(catId, pId);
+        } else {
+            resetForm();
+        }
+    });
+
+    // Search Logic (Regex)
+    searchInput.addEventListener('input', function() {
+        const val = this.value.toUpperCase();
+        const match = val.match(/ES-C(\d)(\d+)/);
+        if(match) {
+            const catId = "C" + match[1];
+            const pId = match[2];
+
+            if(db[catId] && db[catId].prompts[pId]) {
+                catSelect.value = catId;
+                catSelect.dispatchEvent(new Event('change'));
+                promptSelect.value = pId;
+                loadPrompt(catId, pId);
+            }
+        }
+    });
+
+    function loadPrompt(catId, pId) {
+        const pData = db[catId].prompts[pId];
+        currentTemplate = pData.text;
+
+        badge.style.display = "inline-block";
+        badge.textContent = `ID: ES-${catId}${pId} // ${pData.title}`;
+
+        let startIdx = currentTemplate.indexOf("Context variables:");
+        if (startIdx === -1) {
+            startIdx = 0;
+        }
+
+        const endMarkers = ["Detailed Constraints:", "Structure:", "Output Format:"];
+        let endIdx = currentTemplate.length;
+
+        for (let marker of endMarkers) {
+            const idx = currentTemplate.indexOf(marker, startIdx);
+            if (idx !== -1 && idx < endIdx) {
+                endIdx = idx;
+            }
+        }
+
+        const contextBlock = currentTemplate.substring(startIdx, endIdx);
+
+        const regex = /\[([^\]]+)\]/g;
+        let match;
+        const extracted = [];
+        while ((match = regex.exec(contextBlock)) !== null) {
+            extracted.push(match[1]);
+        }
+        currentVars = [...new Set(extracted)];
+
+        varsContainer.innerHTML = '<h2>// Variables</h2>';
+        if(currentVars.length > 0) {
+            currentVars.forEach(v => {
+                let label = document.createElement('label');
+                label.textContent = v.replace(/_/g, ' ');
+
+                let input;
+                if(v.toLowerCase().includes("paste_text") || v.toLowerCase().includes("description")) {
+                    input = document.createElement('textarea');
+                    input.rows = 3;
+                } else {
+                    input = document.createElement('input');
+                    input.type = 'text';
+                }
+                input.id = 'var_' + v;
+                input.placeholder = `Enter ${v.replace(/_/g, ' ')}...`;
+
+                varsContainer.appendChild(label);
+                varsContainer.appendChild(input);
+            });
+            varsContainer.style.display = 'block';
+            generateBtn.style.display = 'block';
+        } else {
+            varsContainer.style.display = 'none';
+            generateBtn.style.display = 'block';
+        }
+
+        outputBox.value = currentTemplate;
+    }
+
+    generateBtn.addEventListener('click', function() {
+        let finalPrompt = currentTemplate;
+        currentVars.forEach(v => {
+            const inputVal = document.getElementById('var_' + v).value;
+            const replacement = inputVal ? inputVal : `[${v}]`;
+            finalPrompt = finalPrompt.split(`[${v}]`).join(replacement);
+        });
+        outputBox.value = finalPrompt;
+    });
+
+    copyBtn.addEventListener('click', function() {
+        outputBox.select();
+        document.execCommand('copy');
+
+        // Đổi màu Nút Copy khi bấm
+        this.textContent = 'COPIED!';
+        this.style.background = "var(--primary)";
+        this.style.color = "var(--btn-text)";
+
+        // Trả lại màu cũ sau 2 giây
+        setTimeout(() => {
+            this.textContent = 'Copy to Clipboard';
+            this.style.background = "var(--surface-hover)";
+            this.style.color = "var(--text-main)";
+        }, 2000);
+    });
+
+    function resetForm() {
+        varsContainer.style.display = 'none';
+        generateBtn.style.display = 'none';
+        varsContainer.innerHTML = '';
+        outputBox.value = '';
+        badge.style.display = 'none';
+        currentTemplate = "";
+        currentVars = [];
+    }
+</script>
+
+</body>
+</html>
