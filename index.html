@@ -295,32 +295,40 @@
     };
 
 
+// ==========================================
+    // 2. THEME LOGIC (Tự động thích nghi với Notion)
     // ==========================================
-    // 2. THEME LOGIC (Chế độ Tối/Sáng)
-    // ==========================================
-    const themeBtn = document.getElementById('themeToggle');
-
-    // Tự động kiểm tra xem thiết bị khách hàng đang dùng Light hay Dark mode
-    const systemPrefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
-    const savedTheme = localStorage.getItem('theme');
-
-    // Quyết định giao diện mặc định
-    if (savedTheme === 'light' || (!savedTheme && systemPrefersLight)) {
-        document.documentElement.setAttribute('data-theme', 'light');
-        themeBtn.textContent = ' Dark Mode';
+    function syncTheme() {
+        // Notion thường thêm class "dark" hoặc "light" vào thẻ body ở cấp cao nhất
+        // Chúng ta kiểm tra cả thuộc tính của Notion và sở thích hệ thống
+        const isNotionDark = document.body.classList.contains('dark') || 
+                             window.matchMedia("(prefers-color-scheme: dark)").matches;
+        
+        if (isNotionDark) {
+            document.documentElement.removeAttribute('data-theme');
+            document.getElementById('themeToggle').textContent = '☀️ Light Mode';
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+            document.getElementById('themeToggle').textContent = '🌙 Dark Mode';
+        }
     }
 
-    // Xử lý sự kiện bấm nút Toggle
-    themeBtn.addEventListener('click', () => {
+    // Rình xem Notion có đổi màu không (đề phòng khách đổi mode ngay trong Notion app)
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(document.body, { attributes: true, childList: true });
+
+    // Chạy lần đầu tiên khi vừa load web
+    syncTheme();
+
+    // Nút gạt tay vẫn giữ nguyên cho khách tùy chỉnh
+    document.getElementById('themeToggle').addEventListener('click', () => {
         let currentTheme = document.documentElement.getAttribute('data-theme');
         if (currentTheme === 'light') {
             document.documentElement.removeAttribute('data-theme');
-            localStorage.setItem('theme', 'dark');
-            themeBtn.textContent = ' Light Mode';
+            document.getElementById('themeToggle').textContent = '☀️ Light Mode';
         } else {
             document.documentElement.setAttribute('data-theme', 'light');
-            localStorage.setItem('theme', 'light');
-            themeBtn.textContent = ' Dark Mode';
+            document.getElementById('themeToggle').textContent = '🌙 Dark Mode';
         }
     });
 
