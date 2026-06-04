@@ -50,22 +50,57 @@
             margin-bottom: 20px;
         }
 
-        .theme-toggle {
-            background: var(--surface);
-            color: var(--text-main);
-            border: 1px solid var(--border);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s;
+        .header {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 20px;
         }
 
-        .theme-toggle:hover {
-            border-color: var(--primary);
+        /* Thiết kế khung nút gạt */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        /* Ẩn checkbox mặc định */
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        /* Thiết kế rãnh trượt (Sẽ tự động nhận màu Vàng/Xanh theo biến --primary) */
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--primary);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        /* Thiết kế cục tròn màu trắng */
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: #ffffff;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* Khi gạt sang Light Mode (Checked) -> Cục tròn chạy sang phải */
+        input:checked + .slider:before {
+            transform: translateX(24px);
         }
 
         .container {
@@ -178,13 +213,18 @@
             font-size: 12px;
             margin-bottom: 16px;
         }
+        
     </style>
 </head>
 <body>
 
 <!-- Nút chuyển đổi giao diện -->
 <div class="header">
-    <button id="themeToggle" class="theme-toggle">️ Light Mode</button>
+    <span style="font-size: 12px; font-weight: bold; margin-right: 12px; letter-spacing: 1px; color: var(--text-dim);">THEME</span>
+    <label class="switch">
+        <input type="checkbox" id="themeToggleCheckbox">
+        <span class="slider"></span>
+    </label>
 </div>
 
 <div class="container">
@@ -296,40 +336,33 @@
 
 
 // ==========================================
-    // 2. THEME LOGIC (Tự động thích nghi với Notion)
+    // 2. THEME LOGIC (Toggle Switch + Real-time Sync)
     // ==========================================
-    function syncTheme() {
-        // Notion thường thêm class "dark" hoặc "light" vào thẻ body ở cấp cao nhất
-        // Chúng ta kiểm tra cả thuộc tính của Notion và sở thích hệ thống
-        const isNotionDark = document.body.classList.contains('dark') || 
-                             window.matchMedia("(prefers-color-scheme: dark)").matches;
-        
-        if (isNotionDark) {
-            document.documentElement.removeAttribute('data-theme');
-            document.getElementById('themeToggle').textContent = '☀️ Light Mode';
-        } else {
+    const themeCheckbox = document.getElementById('themeToggleCheckbox');
+    
+    // Hàm thực thi đổi màu
+    function applyTheme(isLight) {
+        if (isLight) {
             document.documentElement.setAttribute('data-theme', 'light');
-            document.getElementById('themeToggle').textContent = '🌙 Dark Mode';
+            themeCheckbox.checked = true; // Gạt sang phải (Trở thành Xanh lá mạ)
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+            themeCheckbox.checked = false; // Gạt sang trái (Trở thành Vàng)
         }
     }
 
-    // Rình xem Notion có đổi màu không (đề phòng khách đổi mode ngay trong Notion app)
-    const observer = new MutationObserver(syncTheme);
-    observer.observe(document.body, { attributes: true, childList: true });
+    // 1. Kiểm tra màu thiết bị ngay khi vừa mở lên
+    const systemPrefersLight = window.matchMedia("(prefers-color-scheme: light)");
+    applyTheme(systemPrefersLight.matches);
 
-    // Chạy lần đầu tiên khi vừa load web
-    syncTheme();
+    // 2. RADAR: Tự động gạt nút và đổi màu khi thiết bị/trình duyệt đổi màu
+    systemPrefersLight.addEventListener('change', (e) => {
+        applyTheme(e.matches);
+    });
 
-    // Nút gạt tay vẫn giữ nguyên cho khách tùy chỉnh
-    document.getElementById('themeToggle').addEventListener('click', () => {
-        let currentTheme = document.documentElement.getAttribute('data-theme');
-        if (currentTheme === 'light') {
-            document.documentElement.removeAttribute('data-theme');
-            document.getElementById('themeToggle').textContent = '☀️ Light Mode';
-        } else {
-            document.documentElement.setAttribute('data-theme', 'light');
-            document.getElementById('themeToggle').textContent = '🌙 Dark Mode';
-        }
+    // 3. Khách hàng tự lấy tay bấm nút gạt
+    themeCheckbox.addEventListener('change', function() {
+        applyTheme(this.checked);
     });
 
     // ==========================================
